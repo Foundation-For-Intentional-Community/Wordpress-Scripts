@@ -1,0 +1,53 @@
+name:                fic-scripts
+version:             0.1.0.0
+#synopsis:
+#description:
+homepage:            https://github.com/githubuser/fic-scripts#readme
+license:             BSD3
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2018 Author name here
+category:            Web
+extra-source-files:
+- README.md
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+
+dependencies:
+  - base >= 4.7 && < 5
+  - bytestring
+  - cassava
+  - containers
+  - persistent
+  - persistent-mysql
+  - persistent-template
+  - text
+  - time
+
+library:
+  source-dirs: src
+  dependencies:
+    - monad-logger
+    - text
+    - transformers
+    - unliftio-core
+    - hs-php-session
+
+executables:
+  directory-address-export:
+    source-dirs:      exe
+    main:             DirectoryAddressExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
+  full-order-billing-export:
+    source-dirs:      exe
+    main:             FullOrderBillingExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
