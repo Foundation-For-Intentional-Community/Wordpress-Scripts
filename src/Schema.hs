@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -9,7 +10,9 @@
 {-# LANGUAGE TypeFamilies #-}
 module Schema where
 
-import           Control.Monad.IO.Unlift        ( MonadUnliftIO )
+import           Control.Monad.IO.Unlift        ( MonadUnliftIO
+                                                , liftIO
+                                                )
 import           Control.Monad.Logger           ( LoggingT
                                                 , runStderrLoggingT
                                                 )
@@ -18,17 +21,32 @@ import           Data.Text                      ( Text )
 import           Data.Time.Clock                ( UTCTime )
 import           Database.Persist.MySQL
 import           Database.Persist.TH
+import           System.Environment             ( lookupEnv )
 
 
 type DB a = ReaderT SqlBackend (LoggingT IO) a
 
 -- | TODO: pull db config from ENV var or file(that is in .gitignore)
 runDB :: (MonadUnliftIO m) => ReaderT SqlBackend (LoggingT m) a -> m a
-runDB f = runStderrLoggingT $ withMySQLConn
-    defaultConnectInfo { connectPassword = ""
-                       , connectDatabase = ""
-                       }
-    (runSqlConn f)
+runDB f = do
+    let
+        errMsg
+            = "You must supply the DB_USER, DB_PASS, & DB_NAME environmental variables."
+    (dbUser, dbPassword, dbName) <-
+        liftIO
+        $   (,,)
+        <$> lookupEnv "DB_USER"
+        <*> lookupEnv "DB_PASS"
+        <*> lookupEnv "DB_NAME"
+        >>= \case
+                (Just u, Just p, Just n) -> return (u, p, n)
+                _                        -> error errMsg
+    runStderrLoggingT $ withMySQLConn
+        defaultConnectInfo { connectUser     = dbUser
+                           , connectPassword = dbPassword
+                           , connectDatabase = dbName
+                           }
+        (runSqlConn f)
 
 share [mkPersist sqlSettings] [persistLowerCase|
 User sql=3uOgy46w_users
