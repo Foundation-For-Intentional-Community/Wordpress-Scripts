@@ -10,7 +10,11 @@ import           Database.Persist               ( Entity(..) )
 import           Database.Persist.Sql           ( fromSqlKey )
 import           GHC.Generics                   ( Generic )
 
-import           DB
+import           DB                             ( Post(..)
+                                                , FormItem(..)
+                                                , runDB
+                                                , getListings
+                                                )
 
 import qualified Data.ByteString.Lazy          as LBS
 import qualified Data.Map.Strict               as M
