@@ -1,5 +1,7 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
@@ -54,6 +56,7 @@ User sql=3uOgy46w_users
     login Text sql=user_login
     nicename Text sql=user_nicename
     email Text sql=user_email
+    displayName Text sql=display_name
     deriving Show
 
 UserMeta sql=3uOgy46w_usermeta
@@ -62,6 +65,19 @@ UserMeta sql=3uOgy46w_usermeta
     key Text sql=meta_key
     value Text sql=meta_value
     deriving Show
+
+UserGroup sql=3uOgy46w_groups_user_group
+    user UserId sql=user_id
+    group GroupId sql=group_id
+    Primary user group
+    deriving Show
+
+Group sql=3uOgy46w_groups_group
+    Id sql=group_id
+    name Text sql=name
+    UniqueGroupName name
+    deriving Show
+
 
 Post sql=3uOgy46w_posts
     Id sql=ID

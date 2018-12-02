@@ -6,6 +6,8 @@
 {-# LANGUAGE TypeFamilies #-}
 module DB
     ( module Schema
+    , getBestUserName
+    , getGroupUsers
     , Order(..)
     , getOrders
     , getListings
@@ -16,6 +18,7 @@ module DB
     )
 where
 
+import           Control.Applicative            ( (<|>) )
 import           Control.Monad                  ( forM )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Text                      ( Text )
@@ -32,6 +35,38 @@ import           Schema
 
 import qualified Data.Map.Strict               as M
 import qualified Data.ByteString.Lazy          as LBS
+
+
+-- Users
+
+getBestUserName :: (User, M.Map Text Text) -> Text
+getBestUserName (user, metaMap) =
+    fromMaybe (userLogin user)
+        $   firstLast ""
+        <|> firstLast "shipping_"
+        <|> firstLast "billing_"
+        <|> nonEmpty (userDisplayName user)
+        <|> nonEmpty (userNicename user)
+  where
+    getMeta k = M.lookup k metaMap >>= nonEmpty
+    nonEmpty s = if s == "" then Nothing else Just s
+    firstLast prefix =
+        (\firstName lastName -> firstName <> " " <> lastName)
+            <$> getMeta (prefix <> "first_name")
+            <*> getMeta (prefix <> "last_name")
+
+getGroupUsers :: GroupId -> DB [(User, M.Map Text Text)]
+getGroupUsers groupId = do
+    userIds <-
+        map (userGroupUser . entityVal)
+            <$> selectList [UserGroupGroup ==. groupId] []
+    users <- selectList [UserId <-. userIds] []
+    forM users $ \(Entity userId user) -> do
+        metaMap <-
+            M.fromList
+            .   map (\(Entity _ meta) -> (userMetaKey meta, userMetaValue meta))
+            <$> selectList [UserMetaUser ==. userId] []
+        return (user, metaMap)
 
 
 -- Store

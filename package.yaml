@@ -62,3 +62,10 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+  group-member-export:
+    source-dirs:      exe
+    main:             GroupMemberExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
+      - cmdargs
