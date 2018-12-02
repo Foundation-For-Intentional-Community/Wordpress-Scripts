@@ -16,6 +16,7 @@ export MAPS_API_KEY="<googe maps api key>"
 Then you can build/run the scripts with:
 
 ```sh
+sudo apt-get install libmariadbclient-dev libpcre3-dev  # For Debian/Ubuntu
 stack build
 source ./env.sh
 stack exec directory-fix-coordinates -- --delete-private

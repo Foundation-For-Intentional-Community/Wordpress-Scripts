@@ -5,6 +5,12 @@ cache:
     directories:
         - $HOME/.stack
 
+addons:
+    apt:
+        packages:
+            - libmariadbclient-dev
+            - libpcre3-dev
+
 
 before_install:
     - mkdir -p ~/.local/bin
