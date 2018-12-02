@@ -3,7 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered
-                                                , encodeDefaultOrderedByName
                                                 )
 import           Data.Maybe                     ( maybeToList
                                                 , mapMaybe
@@ -24,18 +23,14 @@ import           DB                             ( runDB
                                                 , Post(..)
                                                 , decodePHPStringArray
                                                 )
+import           Export                         ( toCsvFile )
 
-import qualified Data.ByteString.Lazy          as LBS
 import qualified Data.Map.Strict               as M
 import qualified Data.Text                     as T
 
 main :: IO ()
-main =
-    encodeDefaultOrderedByName
-        .   sortWith date
-        .   map orderToData
-        <$> runDB getOrders
-        >>= LBS.writeFile "full-order-export.csv"
+main = sortWith date . map orderToData <$> runDB getOrders >>= toCsvFile
+    "full-order-export.csv"
 
 
 data ExportData =

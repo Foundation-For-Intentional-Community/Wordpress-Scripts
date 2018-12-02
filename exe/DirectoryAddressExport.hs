@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered
-                                                , encodeDefaultOrderedByName
                                                 )
 import           Data.Maybe                     ( fromMaybe )
 import           Data.Text                      ( Text )
@@ -15,17 +14,13 @@ import           DB                             ( Post(..)
                                                 , runDB
                                                 , getListings
                                                 )
+import           Export                         ( toCsvFile )
 
-import qualified Data.ByteString.Lazy          as LBS
 import qualified Data.Map.Strict               as M
 
 main :: IO ()
-main =
-    encodeDefaultOrderedByName
-        .   map listingToData
-        .   filterListings
-        <$> runDB getListings
-        >>= LBS.writeFile "directory-address-export.csv"
+main = map listingToData . filterListings <$> runDB getListings >>= toCsvFile
+    "directory-address-export.csv"
   where
     filterListings = filter $ \(_, metaMap, post) ->
         (M.lookup 424 metaMap == Just "United States")
