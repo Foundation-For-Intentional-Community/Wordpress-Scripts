@@ -38,6 +38,8 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
+- google-maps-geocoding-0.4.0.2
+- google-static-maps-0.5.0.3
 - hs-php-session-0.0.9.3
 
 # Override default flag values for local packages and extra-deps

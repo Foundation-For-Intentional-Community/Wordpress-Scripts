@@ -9,6 +9,9 @@ module DB
     , Order(..)
     , getOrders
     , getListings
+    , AddressMetas(..)
+    , getAddressMetas
+    , upsertItemMeta
     , decodePHPStringArray
     )
 where
@@ -30,6 +33,8 @@ import           Schema
 import qualified Data.Map.Strict               as M
 import qualified Data.ByteString.Lazy          as LBS
 
+
+-- Store
 
 data Order =
     Order
@@ -59,6 +64,8 @@ getOrders = do
             }
 
 
+-- Directory
+
 getListings :: DB [(Entity FormItem, M.Map Int Text, Maybe Post)]
 getListings = do
     ls <- selectList [FormItemIsDraft ==. False, FormItemForm ==. 2] []
@@ -72,6 +79,45 @@ getListings = do
                 ms
         post <- get $ formItemPost i
         return (e, metaMap, post)
+
+data AddressMetas =
+    AddressMetas
+        { addressOne :: Text
+        , addressTwo :: Text
+        , city :: Text
+        , state :: Text
+        , zipCode :: Text
+        , country :: Text
+        }
+getAddressMetas :: M.Map Int Text -> AddressMetas
+getAddressMetas metaMap =
+    let country_ = getMeta 424
+        state_ =
+            if country_ == "United States" then getMeta 815 else getMeta 816
+    in  AddressMetas
+            { addressOne = getMeta 425
+            , addressTwo = getMeta 426
+            , city       = getMeta 427
+            , state      = state_
+            , zipCode    = getMeta 429
+            , country    = country_
+            }
+    where getMeta fId = fromMaybe "" $ M.lookup fId metaMap
+
+upsertItemMeta :: FormItemId -> Int -> Text -> DB ()
+upsertItemMeta itemId fieldId value = do
+    let itemMeta = FormItemMeta
+            { formItemMetaField = fieldId
+            , formItemMetaItem  = itemId
+            , formItemMetaValue = Just value
+            }
+    selectFirst [FormItemMetaItem ==. itemId, FormItemMetaField ==. fieldId] []
+        >>= \case
+                Just (Entity metaId _) -> replace metaId itemMeta
+                Nothing                -> insert_ itemMeta
+
+
+-- Utils
 
 decodePHPStringArray :: Text -> [(Text, Text)]
 decodePHPStringArray s =

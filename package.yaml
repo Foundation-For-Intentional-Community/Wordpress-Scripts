@@ -2,11 +2,11 @@ name:                fic-scripts
 version:             0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/githubuser/fic-scripts#readme
-license:             BSD3
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2018 Author name here
+homepage:            https://github.com/Fellowship-For-Intentional-Community/Wordpress-Scripts
+license:             GPL-3.0
+author:              Pavan RIkhi
+maintainer:          pavan.rikh@gmail.com
+copyright:           2018 Fellowship for Intentional Community
 category:            Web
 extra-source-files:
 - README.md
@@ -45,6 +45,17 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+  directory-fix-coordinates:
+    source-dirs:      exe
+    main:             DirectoryFixCoordinates.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
+      - cmdargs
+      - google-maps-geocoding
+      - http-client
+      - http-client-tls
+      - mtl
   full-order-billing-export:
     source-dirs:      exe
     main:             FullOrderBillingExport.hs
