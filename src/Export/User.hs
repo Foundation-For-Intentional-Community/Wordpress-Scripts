@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-| This module contains types & functions to transform Users into
+commonly used export rows.
+-}
 module Export.User where
-
--- | This module contains types & functions to transform Users into
--- commonly used export rows.
 
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered

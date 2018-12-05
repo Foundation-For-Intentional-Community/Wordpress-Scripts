@@ -5,6 +5,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-| This module contains functions for querying the database as well as
+related helper types & functions.
+-}
 module DB
     ( module Schema
     , getBestUserName

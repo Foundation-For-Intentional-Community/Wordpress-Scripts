@@ -1,3 +1,6 @@
+{-| This module contains functions used to serialize data for exports.
+Currently it only supports writing the CSV files with Cassava.
+-}
 module Export
     ( toCsvFile
     )
