@@ -70,3 +70,10 @@ executables:
     dependencies:
       - fic-scripts
       - cmdargs
+  subscriber-export:
+    source-dirs:      exe
+    main:             SubscriberExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
+      - cmdargs
