@@ -10,6 +10,9 @@ related helper types & functions.
 -}
 module DB
     ( module Schema
+    , DB
+    , DBMonad
+    , runDB
     , getBestUserName
     , getGroupUsers
     , getPostsAndMetas
@@ -30,7 +33,9 @@ where
 import           Conduit                        ( (.|)
                                                 , ConduitT
                                                 , Void
+                                                , ResourceT
                                                 , runConduit
+                                                , runResourceT
                                                 , mapMC
                                                 , foldlC
                                                 , sinkList
@@ -38,6 +43,11 @@ import           Conduit                        ( (.|)
 import           Control.Applicative            ( (<|>) )
 import           Control.Arrow                  ( (>>>) )
 import           Control.Monad                  ( forM )
+import           Control.Monad.IO.Unlift        ( liftIO )
+import           Control.Monad.Logger           ( NoLoggingT
+                                                , runNoLoggingT
+                                                )
+import           Control.Monad.Trans.Reader     ( ReaderT )
 import           Data.Maybe                     ( fromMaybe
                                                 , mapMaybe
                                                 , listToMaybe
@@ -52,6 +62,7 @@ import           Data.PHPSession                ( PHPSessionValue(..)
                                                 )
 import           Database.Persist.MySQL
 import           Text.Read                      ( readMaybe )
+import           System.Environment             ( lookupEnv )
 
 import           Schema
 
@@ -59,6 +70,33 @@ import qualified Data.ByteString.Lazy          as LBS
 import qualified Data.List                     as L
 import qualified Data.Map.Strict               as M
 import qualified Data.Text                     as T
+
+-- Running Queries
+
+type DB a = ReaderT SqlBackend (ResourceT (NoLoggingT IO)) a
+type DBMonad = ReaderT SqlBackend (ResourceT (NoLoggingT IO))
+
+runDB :: DB a -> IO a
+runDB f = do
+    let
+        errMsg
+            = "You must supply the DB_USER, DB_PASS, & DB_NAME environmental variables."
+    (dbUser, dbPassword, dbName) <-
+        liftIO
+        $   (,,)
+        <$> lookupEnv "DB_USER"
+        <*> lookupEnv "DB_PASS"
+        <*> lookupEnv "DB_NAME"
+        >>= \case
+                (Just u, Just p, Just n) -> return (u, p, n)
+                _                        -> error errMsg
+    runNoLoggingT $ runResourceT $ withMySQLConn
+        defaultConnectInfo { connectUser     = dbUser
+                           , connectPassword = dbPassword
+                           , connectDatabase = dbName
+                           }
+        (runSqlConn f)
+
 
 
 -- Users

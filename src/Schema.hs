@@ -12,47 +12,12 @@
 {-# LANGUAGE TypeFamilies #-}
 module Schema where
 
-import           Conduit                        ( ResourceT
-                                                , runResourceT
-                                                )
-import           Control.Monad.IO.Unlift        ( liftIO )
-import           Control.Monad.Logger           ( NoLoggingT
-                                                , runNoLoggingT
-                                                )
-import           Control.Monad.Trans.Reader     ( ReaderT )
 import           Data.Text                      ( Text )
 import           Data.Time.Clock                ( UTCTime )
 import           Database.Persist.MySQL
 import           Database.Persist.TH
-import           System.Environment             ( lookupEnv )
 
 
--- Querying
-
-type DB a = ReaderT SqlBackend (ResourceT (NoLoggingT IO)) a
-type DBMonad = ReaderT SqlBackend (ResourceT (NoLoggingT IO))
-
--- | TODO: pull db config from file(that is in .gitignore)?
-runDB :: DB a -> IO a
-runDB f = do
-    let
-        errMsg
-            = "You must supply the DB_USER, DB_PASS, & DB_NAME environmental variables."
-    (dbUser, dbPassword, dbName) <-
-        liftIO
-        $   (,,)
-        <$> lookupEnv "DB_USER"
-        <*> lookupEnv "DB_PASS"
-        <*> lookupEnv "DB_NAME"
-        >>= \case
-                (Just u, Just p, Just n) -> return (u, p, n)
-                _                        -> error errMsg
-    runNoLoggingT $ runResourceT $ withMySQLConn
-        defaultConnectInfo { connectUser     = dbUser
-                           , connectPassword = dbPassword
-                           , connectDatabase = dbName
-                           }
-        (runSqlConn f)
 
 share [mkPersist sqlSettings] [persistLowerCase|
 User sql=3uOgy46w_users
