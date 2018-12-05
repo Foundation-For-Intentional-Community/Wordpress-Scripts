@@ -3,13 +3,19 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 module DB
     ( module Schema
     , getBestUserName
     , getGroupUsers
+    , getPostsAndMetas
     , Order(..)
     , getOrders
+    , getOrderCustomer
+    , Subscription(..)
+    , getSubscriptions
+    , orderHasProductOrVariant
     , getListings
     , AddressMetas(..)
     , getAddressMetas
@@ -18,9 +24,21 @@ module DB
     )
 where
 
+import           Conduit                        ( (.|)
+                                                , ConduitT
+                                                , Void
+                                                , runConduit
+                                                , mapMC
+                                                , foldlC
+                                                , sinkList
+                                                )
 import           Control.Applicative            ( (<|>) )
+import           Control.Arrow                  ( (>>>) )
 import           Control.Monad                  ( forM )
-import           Data.Maybe                     ( fromMaybe )
+import           Data.Maybe                     ( fromMaybe
+                                                , mapMaybe
+                                                , listToMaybe
+                                                )
 import           Data.Text                      ( Text )
 import           Data.Text.Encoding             ( encodeUtf8
                                                 , decodeUtf8
@@ -30,11 +48,14 @@ import           Data.PHPSession                ( PHPSessionValue(..)
                                                 , convFrom
                                                 )
 import           Database.Persist.MySQL
+import           Text.Read                      ( readMaybe )
 
 import           Schema
 
-import qualified Data.Map.Strict               as M
 import qualified Data.ByteString.Lazy          as LBS
+import qualified Data.List                     as L
+import qualified Data.Map.Strict               as M
+import qualified Data.Text                     as T
 
 
 -- Users
@@ -55,48 +76,137 @@ getBestUserName (user, metaMap) =
             <$> getMeta (prefix <> "first_name")
             <*> getMeta (prefix <> "last_name")
 
-getGroupUsers :: GroupId -> DB [(User, M.Map Text Text)]
+getGroupUsers :: GroupId -> DB [(Entity User, M.Map Text Text)]
 getGroupUsers groupId = do
     userIds <-
         map (userGroupUser . entityVal)
             <$> selectList [UserGroupGroup ==. groupId] []
-    users <- selectList [UserId <-. userIds] []
-    forM users $ \(Entity userId user) -> do
-        metaMap <-
-            M.fromList
-            .   map (\(Entity _ meta) -> (userMetaKey meta, userMetaValue meta))
-            <$> selectList [UserMetaUser ==. userId] []
-        return (user, metaMap)
+    fetchWithMetaMap [UserId <-. userIds]
+                     (\e -> [UserMetaUser ==. entityKey e])
+                     userMetaKey
+                     (fromMaybe "" . userMetaValue)
+
+
+
+-- Posts
+
+getPostsAndMetas :: [Filter Post] -> DB [(Entity Post, M.Map Text (Maybe Text))]
+getPostsAndMetas filters = fetchWithMetaMap
+    filters
+    (\p -> [PostMetaPost ==. entityKey p])
+    postMetaKey
+    postMetaValue
+
+
+{-| Fetch a list of Entities & their Metas. -}
+fetchWithMetaMap
+    :: forall a b c
+     . ( PersistEntity a
+       , PersistEntity b
+       , PersistEntityBackend a ~ SqlBackend
+       , PersistEntityBackend b ~ SqlBackend
+       )
+    => [Filter a]
+    -- ^ Filter the Items
+    -> (Entity a -> [Filter b])
+    -- ^ Select the Item Metas
+    -> (b -> Text)
+    -- ^ Get the Key from a Meta
+    -> (b -> c)
+    -- ^ Get the Value from a Meta
+    -> DB [(Entity a, M.Map Text c)]
+fetchWithMetaMap filters metaFilters key value =
+    runConduit $ selectSource filters [] .| mapMC addMetas .| sinkList
+  where
+    addMetas :: Entity a -> DB (Entity a, M.Map Text c)
+    addMetas item = do
+        metas <- runConduit $ selectSource (metaFilters item) [] .| buildMetaMap
+        return (item, metas)
+    buildMetaMap :: Monad m => ConduitT (Entity b) Void m (M.Map Text c)
+    buildMetaMap = flip foldlC M.empty $ \acc meta ->
+        M.insert (key $ entityVal meta) (value $ entityVal meta) acc
+
 
 
 -- Store
 
+-- Make newtypes?
+type OrderMetaMap = M.Map Text Text
+type OrderItemMetaMap = M.Map Text Text
+type OrderLineItems = [(Entity OrderItem, OrderItemMetaMap)]
+
 data Order =
     Order
         { orderPost :: Entity Post
-        , orderPostMetas :: M.Map Text Text
-        , orderLineItems :: [Text]
+        , orderPostMetas :: OrderMetaMap
+        , orderLineItems :: OrderLineItems
         }
 
 getOrders :: DB [Order]
-getOrders = do
-    os <- selectList [PostType ==. "shop_order"] []
-    forM os $ \e@(Entity orderId _) -> do
-        ms <- selectList [PostMetaPost ==. orderId] []
-        let
-            metaMap = M.fromList $ map
-                (\(Entity _ m) ->
-                    (postMetaKey m, fromMaybe "" $ postMetaValue m)
-                )
-                ms
-        lineItems <- selectList
+getOrders = fetchOrders >>= mapM fetchItems
+  where
+    fetchOrders = fetchWithMetaMap [PostType ==. "shop_order"]
+                                   (\e -> [PostMetaPost ==. entityKey e])
+                                   postMetaKey
+                                   (fromMaybe "" . postMetaValue)
+    fetchItems (e@(Entity orderId _), metaMap) = do
+        lineItems <- fetchWithMetaMap
             [OrderItemOrder ==. orderId, OrderItemType ==. "line_item"]
-            []
+            (\item -> [OrderItemMetaItem ==. entityKey item])
+            orderItemMetaKey
+            orderItemMetaValue
         return Order
             { orderPost      = e
             , orderPostMetas = metaMap
-            , orderLineItems = map (orderItemName . entityVal) lineItems
+            , orderLineItems = lineItems
             }
+
+-- A subscription is just a different type of order. E.g., you can use
+-- `getOrderCustomer` on the PostMetas.
+data Subscription =
+    Subscription
+        { subscriptionPost :: Entity Post
+        , subscriptionPostMetas :: OrderMetaMap
+        , subscriptionLineItems :: OrderLineItems
+        } deriving (Show)
+
+getSubscriptions :: [Filter Post] -> DB [Subscription]
+getSubscriptions filters =
+    getPostsAndMetas ((PostType ==. "shop_subscription") : filters)
+        >>= mapM withMetas
+  where
+    withMetas (sub, subMetas) =
+        Subscription sub (fmap (fromMaybe "") subMetas)
+            <$> fetchWithMetaMap [OrderItemOrder ==. entityKey sub]
+                                 (\e -> [OrderItemMetaItem ==. entityKey e])
+                                 orderItemMetaKey
+                                 orderItemMetaValue
+
+getOrderCustomer :: OrderMetaMap -> DB (Maybe (Entity User, M.Map Text Text))
+getOrderCustomer metaMap =
+    let maybeUserId =
+            M.lookup "_customer_user" metaMap >>= (T.unpack >>> readMaybe)
+    in  case maybeUserId of
+            Nothing     -> return Nothing
+            Just userId -> listToMaybe <$> fetchWithMetaMap
+                [UserId ==. toSqlKey userId]
+                (\e -> [UserMetaUser ==. entityKey e])
+                userMetaKey
+                (fromMaybe "" . userMetaValue)
+
+-- Determine whether a Subscription has an OrderItem with a Product or
+-- Variation ID matching one given in the respective lists.
+orderHasProductOrVariant :: [Text] -> [Text] -> OrderLineItems -> Bool
+orderHasProductOrVariant productIds variationIds lineItems =
+    let metaMaps = map snd lineItems
+    in  oneMetaMatches "_product_id" metaMaps productIds
+            || oneMetaMatches "_variation_id" metaMaps variationIds
+
+-- | Return True if one of the MetaMap's value for the key is in the given list.
+oneMetaMatches :: Eq c => Text -> [M.Map Text c] -> [c] -> Bool
+oneMetaMatches key metaMaps matches =
+    not $ null $ mapMaybe (M.lookup key) metaMaps `L.intersect` matches
+
 
 
 -- Directory
@@ -150,6 +260,7 @@ upsertItemMeta itemId fieldId value = do
         >>= \case
                 Just (Entity metaId _) -> replace metaId itemMeta
                 Nothing                -> insert_ itemMeta
+
 
 
 -- Utils

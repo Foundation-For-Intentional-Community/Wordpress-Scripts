@@ -12,11 +12,12 @@
 {-# LANGUAGE TypeFamilies #-}
 module Schema where
 
-import           Control.Monad.IO.Unlift        ( MonadUnliftIO
-                                                , liftIO
+import           Conduit                        ( ResourceT
+                                                , runResourceT
                                                 )
-import           Control.Monad.Logger           ( LoggingT
-                                                , runStderrLoggingT
+import           Control.Monad.IO.Unlift        ( liftIO )
+import           Control.Monad.Logger           ( NoLoggingT
+                                                , runNoLoggingT
                                                 )
 import           Control.Monad.Trans.Reader     ( ReaderT )
 import           Data.Text                      ( Text )
@@ -26,10 +27,13 @@ import           Database.Persist.TH
 import           System.Environment             ( lookupEnv )
 
 
-type DB a = ReaderT SqlBackend (LoggingT IO) a
+-- Querying
 
--- | TODO: pull db config from ENV var or file(that is in .gitignore)
-runDB :: (MonadUnliftIO m) => ReaderT SqlBackend (LoggingT m) a -> m a
+type DB a = ReaderT SqlBackend (ResourceT (NoLoggingT IO)) a
+type DBMonad = ReaderT SqlBackend (ResourceT (NoLoggingT IO))
+
+-- | TODO: pull db config from file(that is in .gitignore)?
+runDB :: DB a -> IO a
 runDB f = do
     let
         errMsg
@@ -43,7 +47,7 @@ runDB f = do
         >>= \case
                 (Just u, Just p, Just n) -> return (u, p, n)
                 _                        -> error errMsg
-    runStderrLoggingT $ withMySQLConn
+    runNoLoggingT $ runResourceT $ withMySQLConn
         defaultConnectInfo { connectUser     = dbUser
                            , connectPassword = dbPassword
                            , connectDatabase = dbName
@@ -57,13 +61,13 @@ User sql=3uOgy46w_users
     nicename Text sql=user_nicename
     email Text sql=user_email
     displayName Text sql=display_name
-    deriving Show
+    deriving Eq Show
 
 UserMeta sql=3uOgy46w_usermeta
     Id sql=umeta_id
     user UserId sql=user_id
     key Text sql=meta_key
-    value Text sql=meta_value
+    value Text Maybe sql=meta_value
     deriving Show
 
 UserGroup sql=3uOgy46w_groups_user_group
@@ -84,6 +88,7 @@ Post sql=3uOgy46w_posts
     title Text sql=post_title
     author UserId sql=post_author
     status Text sql=post_status
+    parent PostId sql=post_parent default=0
     type Text sql=post_type
     date UTCTime sql=post_date_gmt
     deriving Show
@@ -101,6 +106,13 @@ OrderItem sql=3uOgy46w_woocommerce_order_items
     name Text sql=order_item_name
     type Text sql=order_item_type
     order PostId sql=order_id
+    deriving Show
+
+OrderItemMeta sql=3uOgy46w_woocommerce_order_itemmeta
+    Id sql=meta_id
+    item OrderItemId sql=order_item_id
+    key Text sql=meta_key
+    value Text sql=meta_value
     deriving Show
 
 

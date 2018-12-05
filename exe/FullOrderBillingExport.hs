@@ -18,6 +18,7 @@ import           GHC.Exts                       ( sortWith )
 import           GHC.Generics                   ( Generic )
 
 import           DB                             ( runDB
+                                                , OrderItem(..)
                                                 , Order(..)
                                                 , getOrders
                                                 , Post(..)
@@ -59,8 +60,9 @@ orderToData o = ExportData
     , lastName  = getMeta "_billing_last_name"
     , email     = getMeta "_billing_email"
     , country   = getMeta "_billing_country"
-    , products  = T.intercalate "; " $ orderLineItems o ++ getProductNames
-        (orderPostMetas o)
+    , products  = T.intercalate "; "
+        $  map (orderItemName . entityVal . fst) (orderLineItems o)
+        ++ getProductNames (orderPostMetas o)
     }
     where getMeta k = fromMaybe "" $ M.lookup k $ orderPostMetas o
 
