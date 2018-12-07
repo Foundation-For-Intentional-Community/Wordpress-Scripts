@@ -14,6 +14,13 @@ import           Database.Persist               ( (==.)
                                                 , selectList
                                                 )
 import           GHC.Generics                   ( Generic )
+import           System.Console.CmdArgs.Implicit
+                                                ( (&=)
+                                                , cmdArgs
+                                                , program
+                                                , help
+                                                , summary
+                                                )
 
 import           DB                             ( User(..)
                                                 , UserMeta(..)

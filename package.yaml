@@ -63,6 +63,7 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+      - cmdargs
   full-order-billing-export:
     source-dirs:      exe
     main:             FullOrderBillingExport.hs
