@@ -70,6 +70,13 @@ executables:
     dependencies:
       - fic-scripts
       - cmdargs
+  membership-diff-export:
+    source-dirs:      exe
+    main:             MembershipDiffExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
+      - cmdargs
   subscriber-export:
     source-dirs:      exe
     main:             SubscriberExport.hs
