@@ -57,6 +57,12 @@ executables:
       - http-client
       - http-client-tls
       - mtl
+  directory-non-member-export:
+    source-dirs:      exe
+    main:             DirectoryNonMemberExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
   full-order-billing-export:
     source-dirs:      exe
     main:             FullOrderBillingExport.hs
