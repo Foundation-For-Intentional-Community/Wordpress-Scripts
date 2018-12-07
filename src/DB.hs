@@ -139,35 +139,6 @@ getPostsAndMetas filters = fetchWithMetaMap
     postMetaValue
 
 
-{-| Fetch a list of Entities & their Metas. -}
-fetchWithMetaMap
-    :: forall a b c
-     . ( PersistEntity a
-       , PersistEntity b
-       , PersistEntityBackend a ~ SqlBackend
-       , PersistEntityBackend b ~ SqlBackend
-       )
-    => [Filter a]
-    -- ^ Filter the Items
-    -> (Entity a -> [Filter b])
-    -- ^ Select the Item Metas
-    -> (b -> Text)
-    -- ^ Get the Key from a Meta
-    -> (b -> c)
-    -- ^ Get the Value from a Meta
-    -> DB [(Entity a, M.Map Text c)]
-fetchWithMetaMap filters metaFilters key value =
-    runConduit $ selectSource filters [] .| mapMC addMetas .| sinkList
-  where
-    addMetas :: Entity a -> DB (Entity a, M.Map Text c)
-    addMetas item = do
-        metas <- runConduit $ selectSource (metaFilters item) [] .| buildMetaMap
-        return (item, metas)
-    buildMetaMap :: Monad m => ConduitT (Entity b) Void m (M.Map Text c)
-    buildMetaMap = flip foldlC M.empty $ \acc meta ->
-        M.insert (key $ entityVal meta) (value $ entityVal meta) acc
-
-
 
 -- Store
 
@@ -305,6 +276,34 @@ upsertItemMeta itemId fieldId value = do
 
 
 -- Utils
+
+{-| Fetch a list of Entities & their Metas. -}
+fetchWithMetaMap
+    :: forall a b c
+     . ( PersistEntity a
+       , PersistEntity b
+       , PersistEntityBackend a ~ SqlBackend
+       , PersistEntityBackend b ~ SqlBackend
+       )
+    => [Filter a]
+    -- ^ Filter the Items
+    -> (Entity a -> [Filter b])
+    -- ^ Select the Item Metas
+    -> (b -> Text)
+    -- ^ Get the Key from a Meta
+    -> (b -> c)
+    -- ^ Get the Value from a Meta
+    -> DB [(Entity a, M.Map Text c)]
+fetchWithMetaMap filters metaFilters key value =
+    runConduit $ selectSource filters [] .| mapMC addMetas .| sinkList
+  where
+    addMetas :: Entity a -> DB (Entity a, M.Map Text c)
+    addMetas item = do
+        metas <- runConduit $ selectSource (metaFilters item) [] .| buildMetaMap
+        return (item, metas)
+    buildMetaMap :: Monad m => ConduitT (Entity b) Void m (M.Map Text c)
+    buildMetaMap = flip foldlC M.empty $ \acc meta ->
+        M.insert (key $ entityVal meta) (value $ entityVal meta) acc
 
 decodePHPStringArray :: Text -> [(Text, Text)]
 decodePHPStringArray s =
