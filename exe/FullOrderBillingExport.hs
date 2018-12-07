@@ -16,6 +16,13 @@ import           Database.Persist               ( Entity(..) )
 import           Database.Persist.Sql           ( fromSqlKey )
 import           GHC.Exts                       ( sortWith )
 import           GHC.Generics                   ( Generic )
+import           System.Console.CmdArgs.Implicit
+                                                ( (&=)
+                                                , cmdArgs
+                                                , program
+                                                , help
+                                                , summary
+                                                )
 
 import           DB                             ( runDB
                                                 , OrderItem(..)
@@ -30,8 +37,20 @@ import qualified Data.Map.Strict               as M
 import qualified Data.Text                     as T
 
 main :: IO ()
-main = sortWith date . map orderToData <$> runDB getOrders >>= toCsvFile
-    "full-order-export.csv"
+main =
+    cmdArgs args
+        >>  sortWith date
+        .   map orderToData
+        <$> runDB getOrders
+        >>= toCsvFile "full-order-export.csv"
+
+args :: ()
+args =
+    ()
+        &= program "full-order-billing-export"
+        &= summary "WooCommerce - Full Order Billing Details Export"
+        &= help
+               "Export the date, name, email, country, & products of every Order."
 
 
 data ExportData =

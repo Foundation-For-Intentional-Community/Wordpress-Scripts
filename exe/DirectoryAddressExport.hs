@@ -8,6 +8,13 @@ import           Data.Text                      ( Text )
 import           Database.Persist               ( Entity(..) )
 import           Database.Persist.Sql           ( fromSqlKey )
 import           GHC.Generics                   ( Generic )
+import           System.Console.CmdArgs.Implicit
+                                                ( (&=)
+                                                , cmdArgs
+                                                , program
+                                                , help
+                                                , summary
+                                                )
 
 import           DB                             ( Post(..)
                                                 , FormItem(..)
@@ -19,13 +26,25 @@ import           Export                         ( toCsvFile )
 import qualified Data.Map.Strict               as M
 
 main :: IO ()
-main = map listingToData . filterListings <$> runDB getListings >>= toCsvFile
-    "directory-address-export.csv"
+main =
+    cmdArgs args
+        >>  map listingToData
+        .   filterListings
+        <$> runDB getListings
+        >>= toCsvFile "directory-address-export.csv"
   where
     filterListings = filter $ \(_, metaMap, post) ->
         (M.lookup 424 metaMap == Just "United States")
             && (M.lookup 933 metaMap /= Just "Yes")
             && (fmap postStatus post == Just "publish")
+
+args :: ()
+args =
+    ()
+        &= program "directory-address-export"
+        &= summary "Directory - Contact Address Export"
+        &= help
+               "Export the Name, contact name & address of every published Community."
 
 data ExportData =
   ExportData

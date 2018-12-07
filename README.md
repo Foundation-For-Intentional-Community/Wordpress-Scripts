@@ -22,8 +22,26 @@ source ./env.sh
 stack exec directory-fix-coordinates -- --delete-private
 ```
 
-Some scripts have CLI arguments to change their actions, check the scripts and
-use the `--help` flag to list options.
+Some scripts have CLI arguments/flags to change their actions, use the `--help`
+flag on any script to list their options:
+
+```sh
+$ stack exec subscriber-export -- --help
+Subscriptions - Subscriber Export
+
+subscriber-export [OPTIONS]
+  Export the name & email of all active subscribers.
+
+Common flags:
+  -p --products=PRODUCT_ID,...
+  -v --variations=VARIATION_ID,...
+  -? --help                         Display help message
+  -V --version                      Print version information
+
+Any subscriptions with a matching product or variation will be included.
+
+Passing no product or variation IDs will export all active subscriptions.
+```
 
 
 ## License
