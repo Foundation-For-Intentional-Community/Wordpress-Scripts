@@ -38,7 +38,6 @@ import           Export.User                    ( userToNameAndEmail )
 import           Schema                         ( EntityField(..) )
 
 import qualified Data.List                     as L
-import qualified Data.Text                     as T
 
 
 main :: IO ()
