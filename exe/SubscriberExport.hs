@@ -31,7 +31,9 @@ import           DB                             ( Subscription(..)
                                                 , getOrderCustomer
                                                 , orderHasProductOrVariant
                                                 )
-import           Export                         ( toCsvFile )
+import           Export                         ( toCsvFile
+                                                , nameWithProductTags
+                                                )
 import           Export.User                    ( userToNameAndEmail )
 import           Schema                         ( EntityField(..) )
 
@@ -57,16 +59,11 @@ main = do
         rawCustomers <- mapM (getOrderCustomer . subscriptionPostMetas)
                              filteredSubs
         return . L.nub $ catMaybes rawCustomers
-    let fileName = buildFileName productIds variationIds
-    toCsvFile fileName $ map userToNameAndEmail users
-  where
-    buildFileName productIds variationIds =
-        let prefixedIds =
-                L.nub $ map ("p" <>) productIds ++ map ("v" <>) variationIds
-            argumentDescription = if null prefixedIds
-                then ""
-                else "-" <> T.intercalate "-" prefixedIds
-        in  "subscriber-export" <> argumentDescription <> ".csv"
+    toCsvFile
+            (  nameWithProductTags "subscriber-export" productIds variationIds
+            <> ".csv"
+            )
+        $ map userToNameAndEmail users
 
 
 -- CLI
