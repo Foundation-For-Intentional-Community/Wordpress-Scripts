@@ -81,6 +81,12 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+  order-contact-export:
+    source-dirs:      exe
+    main:             OrderContactExport.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
   subscriber-export:
     source-dirs:      exe
     main:             SubscriberExport.hs
