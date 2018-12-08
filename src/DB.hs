@@ -26,7 +26,7 @@ module DB
     , AddressMetas(..)
     , getAddressMetas
     , upsertItemMeta
-    , decodePHPStringArray
+    , decodeSerializedOrderItems
     )
 where
 
@@ -58,7 +58,6 @@ import           Data.Text.Encoding             ( encodeUtf8
                                                 )
 import           Data.PHPSession                ( PHPSessionValue(..)
                                                 , decodePHPSessionValue
-                                                , convFrom
                                                 )
 import           Database.Persist.MySQL
 import           Text.Read                      ( readMaybe )
@@ -305,18 +304,31 @@ fetchWithMetaMap filters metaFilters key value =
     buildMetaMap = flip foldlC M.empty $ \acc meta ->
         M.insert (key $ entityVal meta) (value $ entityVal meta) acc
 
-decodePHPStringArray :: Text -> [(Text, Text)]
-decodePHPStringArray s =
+-- | Decode the old Order Items stored in the PostMeta of an Order.
+decodeSerializedOrderItems :: Text -> [M.Map Text Text]
+decodeSerializedOrderItems s =
     let phpVals = decodePHPSessionValue $ LBS.fromStrict $ encodeUtf8 s
-    in  recursiveDecode $ fromMaybe (PHPSessionValueArray []) phpVals
+    in  maybe [] decodeItems phpVals
   where
-    both f (x, y) = (f x, f y)
-    filterStrings x = case x of
-        (PHPSessionValueString _, PHPSessionValueString _) -> True
-        _ -> False
-    recursiveDecode :: PHPSessionValue -> [(Text, Text)]
-    recursiveDecode x = case x of
-        PHPSessionValueArray ((_, PHPSessionValueArray vals) : b) ->
-            (both (decodeUtf8 . convFrom) <$> filter filterStrings vals)
-                ++ recursiveDecode (PHPSessionValueArray b)
+    decodeItems :: PHPSessionValue -> [M.Map Text Text]
+    decodeItems = \case
+        PHPSessionValueArray itemsArray -> filter (/= M.empty) $ mapMaybe
+            (\case
+                (_, PHPSessionValueArray itemArray) ->
+                    Just $ decodeItem itemArray
+                _ -> Nothing
+            )
+            itemsArray
         _ -> []
+    decodeItem :: [(PHPSessionValue, PHPSessionValue)] -> M.Map Text Text
+    decodeItem = foldl decodeItemPair M.empty
+    decodeItemPair
+        :: M.Map Text Text
+        -> (PHPSessionValue, PHPSessionValue)
+        -> M.Map Text Text
+    decodeItemPair acc = \case
+        (PHPSessionValueString key, PHPSessionValueString value) ->
+            M.insert (lbsText key) (lbsText value) acc
+        _ -> acc
+    lbsText :: LBS.ByteString -> Text
+    lbsText = decodeUtf8 . LBS.toStrict

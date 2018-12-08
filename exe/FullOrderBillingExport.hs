@@ -4,8 +4,7 @@
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered
                                                 )
-import           Data.Maybe                     ( maybeToList
-                                                , mapMaybe
+import           Data.Maybe                     ( mapMaybe
                                                 , fromMaybe
                                                 )
 import           Data.Text                      ( Text )
@@ -29,7 +28,7 @@ import           DB                             ( runDB
                                                 , Order(..)
                                                 , getOrders
                                                 , Post(..)
-                                                , decodePHPStringArray
+                                                , decodeSerializedOrderItems
                                                 )
 import           Export                         ( toCsvFile )
 
@@ -87,8 +86,6 @@ orderToData o = ExportData
 
 getProductNames :: M.Map Text Text -> [Text]
 getProductNames m =
-    mapMaybe (\(key, val) -> if key == "name" then Just val else Nothing)
-        $   concat
-        .   maybeToList
-        $   decodePHPStringArray
-        <$> M.lookup "_order_items" m
+    mapMaybe (M.lookup "name") $ maybe [] decodeSerializedOrderItems $ M.lookup
+        "_order_items"
+        m
