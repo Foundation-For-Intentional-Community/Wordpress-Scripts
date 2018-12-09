@@ -57,6 +57,7 @@ main = do
     toCsvFile
             (nameWithProductTags "order-contact-export" productIds [] <> ".csv")
         . L.nubBy (\x y -> email x == email y)
+        . filter (\d -> email d /= "" && country d /= "")
         $ map orderToData ordersAndUsers
 
 filterOrders :: [Text] -> [Order] -> [Order]
