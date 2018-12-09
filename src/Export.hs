@@ -10,7 +10,9 @@ where
 
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered
-                                                , encodeDefaultOrderedByName
+                                                , encodeDefaultOrderedByNameWith
+                                                , defaultEncodeOptions
+                                                , EncodeOptions(encUseCrLf)
                                                 )
 import           Data.Text                      ( Text
                                                 , unpack
@@ -24,7 +26,9 @@ import qualified Data.Text                     as T
 -- | TODO: Prepend `YYYY-MM-DD-` & append `.csv` extension.
 toCsvFile :: (DefaultOrdered a, ToNamedRecord a) => Text -> [a] -> IO ()
 toCsvFile fileName recordList =
-    LBS.writeFile (unpack fileName) $ encodeDefaultOrderedByName recordList
+    LBS.writeFile (unpack fileName) $ encodeDefaultOrderedByNameWith
+        (defaultEncodeOptions { encUseCrLf = True })
+        recordList
 
 -- | Build a file name encoded with Product & Variation IDs.
 --
