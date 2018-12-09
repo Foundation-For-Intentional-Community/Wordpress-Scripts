@@ -47,6 +47,12 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+  directory-deactivate-memberships:
+    source-dirs:      exe
+    main:             DirectoryDeactivateMemberships.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
   directory-fix-coordinates:
     source-dirs:      exe
     main:             DirectoryFixCoordinates.hs
