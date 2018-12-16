@@ -93,6 +93,12 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+  posts-publish-scheduled:
+    source-dirs:      exe
+    main:             PostsPublishScheduled.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
   subscriber-export:
     source-dirs:      exe
     main:             SubscriberExport.hs
