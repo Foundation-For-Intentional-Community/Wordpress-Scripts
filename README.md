@@ -22,8 +22,8 @@ source ./env.sh
 stack exec directory-fix-coordinates -- --delete-private
 ```
 
-Some scripts have CLI arguments/flags to change their actions, use the `--help`
-flag on any script to list their options:
+Some scripts have a `--help` flag & some have CLI arguments/flags to change
+their actions. Use the `--help` flag on any script to list their options:
 
 ```sh
 $ stack exec subscriber-export -- --help
@@ -41,6 +41,19 @@ Common flags:
 Any subscriptions with a matching product or variation will be included.
 
 Passing no product or variation IDs will export all active subscriptions.
+```
+
+You can build a specific script and/or pass additional options like so:
+
+```sh
+stack build fic-scripts:directory-editor-check --pedantic --ghc-options -O2
+```
+
+You can build HTML documentation with:
+```sh
+stack build --haddock
+# Or skip building documentation for dependencies
+stack build --haddock --no-haddock-deps
 ```
 
 
