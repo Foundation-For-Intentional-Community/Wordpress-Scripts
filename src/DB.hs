@@ -13,6 +13,7 @@ module DB
     , DB
     , DBMonad
     , runDB
+    , getUser
     , getBestUserName
     , getGroupUsers
     , getPostsAndMetas
@@ -25,6 +26,7 @@ module DB
     , getListings
     , AddressMetas(..)
     , getAddressMetas
+    , getBestCommunityName
     , upsertItemMeta
     , decodeSerializedOrderItems
     )
@@ -99,6 +101,14 @@ runDB f = do
 
 
 -- Users
+
+getUser :: UserId -> DB (Maybe (Entity User, M.Map Text Text))
+getUser userId = listToMaybe <$> fetchWithMetaMap
+    [UserId ==. userId]
+    (\e -> [UserMetaUser ==. entityKey e])
+    userMetaKey
+    (fromMaybe "" . userMetaValue)
+
 
 getBestUserName :: (Entity User, M.Map Text Text) -> Text
 getBestUserName (Entity _ user, metaMap) =
@@ -259,6 +269,16 @@ getAddressMetas metaMap =
             , country    = country_
             }
     where getMeta fId = fromMaybe "" $ M.lookup fId metaMap
+
+{- | Prefer the post name, falling back to the name meta-field and then
+finally to the entry name.
+-}
+getBestCommunityName :: (Entity FormItem, M.Map Int Text, Maybe Post) -> Text
+getBestCommunityName (item, fields, maybePost) =
+    let entryName         = formItemName $ entityVal item
+        metaFieldName     = M.lookup 9 fields
+        directoryPostName = postTitle <$> maybePost
+    in  fromMaybe entryName $ directoryPostName <|> metaFieldName
 
 upsertItemMeta :: FormItemId -> Int -> Text -> DB ()
 upsertItemMeta itemId fieldId value = do

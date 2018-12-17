@@ -7,8 +7,7 @@ they don't match.
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered
                                                 )
-import           Data.Maybe                     ( fromMaybe
-                                                , isJust
+import           Data.Maybe                     ( isJust
                                                 , catMaybes
                                                 )
 import qualified Data.Text                     as T
@@ -34,6 +33,7 @@ import           DB                             ( DB
                                                 , UserId
                                                 , runDB
                                                 , getListings
+                                                , getBestCommunityName
                                                 , Post(..)
                                                 , FormItem(..)
                                                 )
@@ -56,8 +56,6 @@ args =
 
 userIdFieldId :: Int
 userIdFieldId = 430
-communityNameFieldId :: Int
-communityNameFieldId = 9
 
 nonMatchingListings
     :: [(Entity FormItem, M.Map Int Text, Maybe Post)] -> DB [ExportData]
@@ -66,12 +64,10 @@ nonMatchingListings = fmap catMaybes . mapM filterListings
     filterListings
         :: (Entity FormItem, M.Map Int Text, Maybe Post)
         -> DB (Maybe ExportData)
-    filterListings (item, fields, maybePost) = do
-        let listingID = fromIntegral . fromSqlKey $ entityKey item
-            communityName =
-                fromMaybe (formItemName $ entityVal item)
-                    $ M.lookup communityNameFieldId fields
-            postExists = isJustText maybePost
+    filterListings l@(item, fields, maybePost) = do
+        let listingID     = fromIntegral . fromSqlKey $ entityKey item
+            communityName = getBestCommunityName l
+            postExists    = isJustText maybePost
             postIsDraft =
                 maybe "" (boolText . (/= "publish") . postStatus) maybePost
             formidableIsDraft = boolText . formItemIsDraft $ entityVal item
