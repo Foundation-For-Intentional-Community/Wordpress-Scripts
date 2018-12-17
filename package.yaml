@@ -53,6 +53,12 @@ executables:
     other-modules: []
     dependencies:
       - fic-scripts
+  directory-editor-check:
+    source-dirs:      exe
+    main:             DirectoryEditorCheck.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
   directory-fix-coordinates:
     source-dirs:      exe
     main:             DirectoryFixCoordinates.hs
