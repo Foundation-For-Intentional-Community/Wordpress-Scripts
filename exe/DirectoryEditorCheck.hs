@@ -9,6 +9,7 @@ import           Data.Csv                       ( ToNamedRecord
                                                 )
 import           Data.Maybe                     ( fromMaybe
                                                 , isJust
+                                                , catMaybes
                                                 )
 import qualified Data.Text                     as T
 import           Database.Persist.Sql           ( Entity(..)
@@ -60,16 +61,8 @@ communityNameFieldId = 9
 
 nonMatchingListings
     :: [(Entity FormItem, M.Map Int Text, Maybe Post)] -> DB [ExportData]
-nonMatchingListings = mapMaybeM filterListings
+nonMatchingListings = fmap catMaybes . mapM filterListings
   where
-    mapMaybeM :: Monad m => (a -> m (Maybe b)) -> [a] -> m [b]
-    mapMaybeM f xs = case xs of
-        []       -> return []
-        x : rest -> do
-            x_ <- f x
-            case x_ of
-                Nothing  -> mapMaybeM f rest
-                Just x__ -> (x__ :) <$> mapMaybeM f rest
     filterListings
         :: (Entity FormItem, M.Map Int Text, Maybe Post)
         -> DB (Maybe ExportData)
