@@ -115,9 +115,9 @@ listingToData (Entity _ item, metaMap, post, userAndMetas) =
                         , communityName = community
                         }
         editorData = case userAndMetas of
-            Nothing                         -> Nothing
-            Just (Entity _ user, userMetas) -> Just ExportData
-                { contactName   = getBestUserName (user, userMetas)
+            Nothing                   -> Nothing
+            Just u@(Entity _ user, _) -> Just ExportData
+                { contactName   = getBestUserName u
                 , contactEmail  = userEmail user
                 , communityName = community
                 }

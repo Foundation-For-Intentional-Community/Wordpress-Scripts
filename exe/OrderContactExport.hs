@@ -4,7 +4,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 import           Control.Applicative            ( (<|>) )
-import           Control.Arrow                  ( first )
 import           Control.Monad                  ( forM )
 import           Data.Csv                       ( ToNamedRecord
                                                 , DefaultOrdered
@@ -108,20 +107,19 @@ instance DefaultOrdered ExportData
 orderToData :: (Order, Maybe (Entity User, M.Map Text Text)) -> ExportData
 orderToData (o, maybeUser) =
     let customerName =
-            fromMaybe ""
-                $   maybeFirstLast "_billing_"
-                <|> maybeFirstLast "_shipping_"
-                <|> fmap (getBestUserName . first entityVal) maybeUser
+                fromMaybe ""
+                    $   maybeFirstLast "_billing_"
+                    <|> maybeFirstLast "_shipping_"
+                    <|> fmap getBestUserName maybeUser
         customerEmail =
-            fromMaybe ""
-                $   getMeta "_billing_email"
-                <|> getMeta "_shipping_email"
-                <|> fmap (userEmail . entityVal . fst) maybeUser
-    in  ExportData
-            { name    = customerName
-            , email   = customerEmail
-            , country = fromMaybe "" $ getMeta "_billing_country"
-            }
+                fromMaybe ""
+                    $   getMeta "_billing_email"
+                    <|> getMeta "_shipping_email"
+                    <|> fmap (userEmail . entityVal . fst) maybeUser
+    in  ExportData { name    = customerName
+                   , email   = customerEmail
+                   , country = fromMaybe "" $ getMeta "_billing_country"
+                   }
   where
     getMeta k = M.lookup k $ orderPostMetas o
     maybeFirstLast prefix =

@@ -100,8 +100,8 @@ runDB f = do
 
 -- Users
 
-getBestUserName :: (User, M.Map Text Text) -> Text
-getBestUserName (user, metaMap) =
+getBestUserName :: (Entity User, M.Map Text Text) -> Text
+getBestUserName (Entity _ user, metaMap) =
     fromMaybe (userLogin user)
         $   firstLast ""
         <|> firstLast "shipping_"

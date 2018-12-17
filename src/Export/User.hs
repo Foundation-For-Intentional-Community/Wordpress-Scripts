@@ -26,5 +26,5 @@ instance ToNamedRecord NameAndEmail
 instance DefaultOrdered NameAndEmail
 
 userToNameAndEmail :: (Entity User, M.Map Text Text) -> NameAndEmail
-userToNameAndEmail (Entity _ user, metas) =
-    NameAndEmail {name = getBestUserName (user, metas), email = userEmail user}
+userToNameAndEmail u@(Entity _ user, _) =
+    NameAndEmail { name = getBestUserName u, email = userEmail user }
