@@ -9,25 +9,31 @@
 related helper types & functions.
 -}
 module DB
-    ( module Schema
+    ( -- * Schema
+      module Schema
+      -- * Database Monad
     , DB
     , DBMonad
     , runDB
+    -- * Users
     , getUser
     , getBestUserName
     , getGroupUsers
     , getPostsAndMetas
+    -- * Store
     , Order(..)
     , getOrders
     , getOrderCustomer
     , Subscription(..)
     , getSubscriptions
     , orderHasProductOrVariant
+    -- * Directory
     , getListings
     , AddressMetas(..)
     , getAddressMetas
     , getBestCommunityName
     , upsertItemMeta
+    -- * Misc
     , decodeSerializedOrderItems
     )
 where
@@ -176,11 +182,10 @@ getOrders = fetchOrders >>= mapM fetchItems
             (\item -> [OrderItemMetaItem ==. entityKey item])
             orderItemMetaKey
             orderItemMetaValue
-        return Order
-            { orderPost      = e
-            , orderPostMetas = metaMap
-            , orderLineItems = lineItems
-            }
+        return Order { orderPost      = e
+                     , orderPostMetas = metaMap
+                     , orderLineItems = lineItems
+                     }
 
 -- A subscription is just a different type of order. E.g., you can use
 -- `getOrderCustomer` on the PostMetas.
@@ -206,7 +211,7 @@ getSubscriptions filters =
 getOrderCustomer :: OrderMetaMap -> DB (Maybe (Entity User, M.Map Text Text))
 getOrderCustomer metaMap =
     let maybeUserId =
-            M.lookup "_customer_user" metaMap >>= (T.unpack >>> readMaybe)
+                M.lookup "_customer_user" metaMap >>= (T.unpack >>> readMaybe)
     in  case maybeUserId of
             Nothing     -> return Nothing
             Just userId -> listToMaybe <$> fetchWithMetaMap
@@ -259,15 +264,14 @@ getAddressMetas :: M.Map Int Text -> AddressMetas
 getAddressMetas metaMap =
     let country_ = getMeta 424
         state_ =
-            if country_ == "United States" then getMeta 815 else getMeta 816
-    in  AddressMetas
-            { addressOne = getMeta 425
-            , addressTwo = getMeta 426
-            , city       = getMeta 427
-            , state      = state_
-            , zipCode    = getMeta 429
-            , country    = country_
-            }
+                if country_ == "United States" then getMeta 815 else getMeta 816
+    in  AddressMetas { addressOne = getMeta 425
+                     , addressTwo = getMeta 426
+                     , city       = getMeta 427
+                     , state      = state_
+                     , zipCode    = getMeta 429
+                     , country    = country_
+                     }
     where getMeta fId = fromMaybe "" $ M.lookup fId metaMap
 
 {- | Prefer the post name, falling back to the name meta-field and then
@@ -282,11 +286,10 @@ getBestCommunityName (item, fields, maybePost) =
 
 upsertItemMeta :: FormItemId -> Int -> Text -> DB ()
 upsertItemMeta itemId fieldId value = do
-    let itemMeta = FormItemMeta
-            { formItemMetaField = fieldId
-            , formItemMetaItem  = itemId
-            , formItemMetaValue = Just value
-            }
+    let itemMeta = FormItemMeta { formItemMetaField = fieldId
+                                , formItemMetaItem  = itemId
+                                , formItemMetaValue = Just value
+                                }
     selectFirst [FormItemMetaItem ==. itemId, FormItemMetaField ==. fieldId] []
         >>= \case
                 Just (Entity metaId _) -> replace metaId itemMeta

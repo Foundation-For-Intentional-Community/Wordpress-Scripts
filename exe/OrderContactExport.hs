@@ -63,9 +63,9 @@ filterOrders :: [Text] -> [Order] -> [Order]
 filterOrders productIds = filter
     (\order ->
         let productIdsFromPostMeta =
-                mapMaybe (M.lookup "id")
-                    $ maybe [] decodeSerializedOrderItems
-                    $ M.lookup "_order_items" (orderPostMetas order)
+                    mapMaybe (M.lookup "id")
+                        $ maybe [] decodeSerializedOrderItems
+                        $ M.lookup "_order_items" (orderPostMetas order)
         in  not (null (productIdsFromPostMeta `L.intersect` productIds))
                 || orderHasProductOrVariant productIds [] (orderLineItems order)
     )
@@ -82,10 +82,9 @@ data Args
 
 argSpec :: Args
 argSpec =
-    Args
-            { initialProduct = def &= argPos 0 &= typ "PRODUCT_ID"
-            , products       = def &= args &= typ "PRODUCT_IDS"
-            }
+    Args { initialProduct = def &= argPos 0 &= typ "PRODUCT_ID"
+         , products       = def &= args &= typ "PRODUCT_IDS"
+         }
         &= program "order-contact-export"
         &= summary "WooCommerce - Order Contact Export"
         &= help

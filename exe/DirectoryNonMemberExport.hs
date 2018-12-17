@@ -44,8 +44,7 @@ main = do
         let editorId = case mP of
                 Nothing   -> formItemUser item
                 Just post -> postAuthor post
-        in
-            do
+        in  do
                 editor <- get editorId >>= \ed -> do
                     metas <- selectList [UserMetaUser ==. editorId] []
                     let userMetaMap = foldl
@@ -103,17 +102,17 @@ listingToData (Entity _ item, metaMap, post, userAndMetas) =
             Just p  -> postTitle p
             Nothing -> formItemName item
         contactData =
-            case
-                    (,)
-                    <$> getMeta contactNameFieldId
-                    <*> getMeta contactEmailFieldId
-                of
-                    Nothing            -> Nothing
-                    Just (name, email) -> Just ExportData
-                        { contactName   = name
-                        , contactEmail  = email
-                        , communityName = community
-                        }
+                case
+                        (,)
+                        <$> getMeta contactNameFieldId
+                        <*> getMeta contactEmailFieldId
+                    of
+                        Nothing            -> Nothing
+                        Just (name, email) -> Just ExportData
+                            { contactName   = name
+                            , contactEmail  = email
+                            , communityName = community
+                            }
         editorData = case userAndMetas of
             Nothing                   -> Nothing
             Just u@(Entity _ user, _) -> Just ExportData
