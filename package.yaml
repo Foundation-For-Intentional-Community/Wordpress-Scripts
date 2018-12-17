@@ -69,6 +69,12 @@ executables:
       - http-client
       - http-client-tls
       - mtl
+  directory-invalid-users:
+    source-dirs:      exe
+    main:             DirectoryInvalidUsers.hs
+    other-modules: []
+    dependencies:
+      - fic-scripts
   directory-non-member-export:
     source-dirs:      exe
     main:             DirectoryNonMemberExport.hs
