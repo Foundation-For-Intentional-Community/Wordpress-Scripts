@@ -1,3 +1,4 @@
 *.cabal
 *.csv
+*.ods
 env*.sh
