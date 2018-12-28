@@ -40,29 +40,26 @@ library:
     - unliftio-core
     - hs-php-session
 
+# Default fields for the executable blocks
+_exe-defs: &exe-defaults
+  source-dirs:      exe
+  other-modules:    []
+  dependencies:
+    - fic-scripts
+
 executables:
   directory-address-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             DirectoryAddressExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   directory-deactivate-memberships:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             DirectoryDeactivateMemberships.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   directory-editor-check:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             DirectoryEditorCheck.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   directory-fix-coordinates:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             DirectoryFixCoordinates.hs
-    other-modules: []
     dependencies:
       - fic-scripts
       - google-maps-geocoding
@@ -70,50 +67,26 @@ executables:
       - http-client-tls
       - mtl
   directory-invalid-users:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             DirectoryInvalidUsers.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   directory-non-member-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             DirectoryNonMemberExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   full-order-billing-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             FullOrderBillingExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   group-member-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             GroupMemberExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   membership-diff-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             MembershipDiffExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   order-contact-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             OrderContactExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   posts-publish-scheduled:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             PostsPublishScheduled.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
   subscriber-export:
-    source-dirs:      exe
+    <<: *exe-defaults
     main:             SubscriberExport.hs
-    other-modules: []
-    dependencies:
-      - fic-scripts
