@@ -1,95 +1,119 @@
-name:                fic-scripts
-version:             0.1.0.0
-#synopsis:
-#description:
-homepage:            https://github.com/Fellowship-For-Intentional-Community/Wordpress-Scripts
-license:             GPL-3.0
-author:              Pavan Rikhi
-maintainer:          pavan.rikh@gmail.com
-copyright:           2018 Fellowship for Intentional Community
-category:            Web
+---
+
+name:
+    fic-scripts
+version:
+    0.1.0.0
+# synopsis:
+# description:
+homepage:
+    https://github.com/Fellowship-For-Intentional-Community/Wordpress-Scripts
+license:
+    GPL-3.0
+author:
+    Pavan Rikhi
+maintainer:
+    pavan.rikh@gmail.com
+copyright:
+    2018 Fellowship for Intentional Community
+category:
+    Web
 extra-source-files:
-- README.md
+    - README.md
 
 ghc-options:
-- -Wall
-- -Wcompat
-- -Wincomplete-record-updates
-- -Wincomplete-uni-patterns
-- -Wredundant-constraints
+    - -Wall
+    - -Wcompat
+    - -Wincomplete-record-updates
+    - -Wincomplete-uni-patterns
+    - -Wredundant-constraints
 
 dependencies:
-  - base >= 4.7 && < 5
-  - cassava
-  - containers
-  - cmdargs
-  - persistent
-  - persistent-mysql
-  - persistent-template
-  - text
-  - time
+    - base >= 4.7 && < 5
+    - cassava
+    - containers
+    - cmdargs
+    - persistent
+    - persistent-mysql
+    - persistent-template
+    - text
+    - time
 
 library:
-  source-dirs: src
-  dependencies:
-    - bytestring
-    - conduit
-    - monad-logger
-    - text
-    - transformers
-    - unliftio-core
-    - hs-php-session
+    source-dirs: src
+    dependencies:
+        - bytestring
+        - conduit
+        - monad-logger
+        - text
+        - transformers
+        - unliftio-core
+        - hs-php-session
 
 # Default fields for the executable blocks
 _exe-defs: &exe-defaults
-  source-dirs:      exe
-  other-modules:    []
-  dependencies:
-    - fic-scripts
+    source-dirs:
+        exe
+    other-modules:
+        []
+    dependencies:
+        - fic-scripts
 
 executables:
-  directory-address-export:
-    <<: *exe-defaults
-    main:             DirectoryAddressExport.hs
-  directory-deactivate-memberships:
-    <<: *exe-defaults
-    main:             DirectoryDeactivateMemberships.hs
-  directory-editor-check:
-    <<: *exe-defaults
-    main:             DirectoryEditorCheck.hs
-  directory-fix-coordinates:
-    <<: *exe-defaults
-    main:             DirectoryFixCoordinates.hs
-    dependencies:
-      - fic-scripts
-      - google-maps-geocoding
-      - http-client
-      - http-client-tls
-      - mtl
-  directory-invalid-users:
-    <<: *exe-defaults
-    main:             DirectoryInvalidUsers.hs
-  directory-non-member-export:
-    <<: *exe-defaults
-    main:             DirectoryNonMemberExport.hs
-  directory-member-export:
-    <<: *exe-defaults
-    main: DirectoryMemberExport.hs
-  full-order-billing-export:
-    <<: *exe-defaults
-    main:             FullOrderBillingExport.hs
-  group-member-export:
-    <<: *exe-defaults
-    main:             GroupMemberExport.hs
-  membership-diff-export:
-    <<: *exe-defaults
-    main:             MembershipDiffExport.hs
-  order-contact-export:
-    <<: *exe-defaults
-    main:             OrderContactExport.hs
-  posts-publish-scheduled:
-    <<: *exe-defaults
-    main:             PostsPublishScheduled.hs
-  subscriber-export:
-    <<: *exe-defaults
-    main:             SubscriberExport.hs
+    directory-address-export:
+        <<: *exe-defaults
+        main:
+            DirectoryAddressExport.hs
+    directory-deactivate-memberships:
+        <<: *exe-defaults
+        main:
+            DirectoryDeactivateMemberships.hs
+    directory-editor-check:
+        <<: *exe-defaults
+        main:
+            DirectoryEditorCheck.hs
+    directory-fix-coordinates:
+        <<: *exe-defaults
+        main:
+            DirectoryFixCoordinates.hs
+        dependencies:
+            - fic-scripts
+            - google-maps-geocoding
+            - http-client
+            - http-client-tls
+            - mtl
+    directory-invalid-users:
+        <<: *exe-defaults
+        main:
+            DirectoryInvalidUsers.hs
+    directory-member-export:
+        <<: *exe-defaults
+        main: DirectoryMemberExport.hs
+    directory-non-member-export:
+        <<: *exe-defaults
+        main:
+            DirectoryNonMemberExport.hs
+    full-order-billing-export:
+        <<: *exe-defaults
+        main:
+            FullOrderBillingExport.hs
+    group-member-export:
+        <<: *exe-defaults
+        main:
+            GroupMemberExport.hs
+    membership-diff-export:
+        <<: *exe-defaults
+        main:
+            MembershipDiffExport.hs
+    order-contact-export:
+        <<: *exe-defaults
+        main:
+            OrderContactExport.hs
+    posts-publish-scheduled:
+        <<: *exe-defaults
+        main:
+            PostsPublishScheduled.hs
+    subscriber-export:
+        <<: *exe-defaults
+        main:
+            SubscriberExport.hs
