@@ -4,7 +4,7 @@ version:             0.1.0.0
 #description:
 homepage:            https://github.com/Fellowship-For-Intentional-Community/Wordpress-Scripts
 license:             GPL-3.0
-author:              Pavan RIkhi
+author:              Pavan Rikhi
 maintainer:          pavan.rikh@gmail.com
 copyright:           2018 Fellowship for Intentional Community
 category:            Web
@@ -72,6 +72,9 @@ executables:
   directory-non-member-export:
     <<: *exe-defaults
     main:             DirectoryNonMemberExport.hs
+  directory-member-export:
+    <<: *exe-defaults
+    main: DirectoryMemberExport.hs
   full-order-billing-export:
     <<: *exe-defaults
     main:             FullOrderBillingExport.hs
