@@ -48,7 +48,7 @@ import           System.Console.CmdArgs.Implicit
                                                 , explicit
                                                 )
 import           System.Environment             ( lookupEnv )
-import           Web.Google.Maps.Geocoding      ( geocode
+import           Web.Google.Geocoding           ( geocode
                                                 , Key(..)
                                                 , Address(..)
                                                 , Geometry(..)
