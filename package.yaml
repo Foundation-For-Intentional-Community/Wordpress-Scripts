@@ -93,6 +93,10 @@ executables:
         <<: *exe-defaults
         main:
             DirectoryNonMemberExport.hs
+    directory-migrate-elm-details:
+        <<: *exe-defaults
+        main:
+            DirectoryMigrateElmDetails.hs
     full-order-billing-export:
         <<: *exe-defaults
         main:

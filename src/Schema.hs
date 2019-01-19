@@ -51,6 +51,7 @@ Group sql=3uOgy46w_groups_group
 Post sql=3uOgy46w_posts
     Id sql=ID
     title Text sql=post_title
+    content Text sql=post_content
     author UserId sql=post_author
     status Text sql=post_status
     parent PostId sql=post_parent default=0
