@@ -86,6 +86,10 @@ executables:
         <<: *exe-defaults
         main:
             DirectoryInvalidUsers.hs
+    directory-location-export:
+        <<: *exe-defaults
+        main:
+            DirectoryLocationExport.hs
     directory-member-export:
         <<: *exe-defaults
         main: DirectoryMemberExport.hs
