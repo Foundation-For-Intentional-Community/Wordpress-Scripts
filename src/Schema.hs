@@ -56,6 +56,7 @@ Post sql=3uOgy46w_posts
     status Text sql=post_status
     parent PostId sql=post_parent default=0
     type Text sql=post_type
+    mimeType Text sql=post_mime_type
     date UTCTime sql=post_date_gmt
     deriving Show
 

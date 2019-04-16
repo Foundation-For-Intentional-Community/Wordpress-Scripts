@@ -121,6 +121,14 @@ executables:
         <<: *exe-defaults
         main:
             PostsPublishScheduled.hs
+    regenerate-thumbnails:
+        <<: *exe-defaults
+        main:
+            RegenerateThumbnails.hs
+        dependencies:
+            - fic-scripts
+            - split
+            - typed-process
     subscriber-export:
         <<: *exe-defaults
         main:
