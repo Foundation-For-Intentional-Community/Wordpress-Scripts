@@ -86,8 +86,8 @@ FormItem sql=3uOgy46w_frm_items
     Id sql=id
     name Text sql=name
     form Int sql=form_id
-    post PostId sql=post_id
-    user UserId sql=user_id
+    post PostId Maybe sql=post_id
+    user UserId Maybe sql=user_id
     isDraft Bool sql=is_draft
     deriving Show
 

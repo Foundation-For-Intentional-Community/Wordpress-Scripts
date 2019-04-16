@@ -8,10 +8,11 @@ import           Data.Maybe                     ( catMaybes
                                                 , fromMaybe
                                                 )
 import           Data.Text                      ( Text )
-import           Database.Persist               ( (==.)
+import           Database.Persist.Sql           ( (==.)
                                                 , Entity(..)
                                                 , get
                                                 , selectList
+                                                , toSqlKey
                                                 )
 import           GHC.Generics                   ( Generic )
 import           System.Console.CmdArgs.Implicit
@@ -42,7 +43,7 @@ main = do
     listings    <- filter isNonMember <$> runDB getListings
     withEditors <- runDB $ forM listings $ \(e@(Entity _ item), m, mP) ->
         let editorId = case mP of
-                Nothing   -> formItemUser item
+                Nothing   -> fromMaybe (toSqlKey 0) $ formItemUser item
                 Just post -> postAuthor post
         in  do
                 editor <- get editorId >>= \ed -> do

@@ -50,7 +50,9 @@ import           Conduit                        ( (.|)
                                                 )
 import           Control.Applicative            ( (<|>) )
 import           Control.Arrow                  ( (>>>) )
-import           Control.Monad                  ( forM )
+import           Control.Monad                  ( forM
+                                                , join
+                                                )
 import           Control.Monad.IO.Unlift        ( liftIO )
 import           Control.Monad.Logger           ( NoLoggingT
                                                 , runNoLoggingT
@@ -248,7 +250,10 @@ getListings = do
                     (formItemMetaField m, fromMaybe "" $ formItemMetaValue m)
                 )
                 ms
-        post <- get $ formItemPost i
+        let postId =
+                formItemPost i >>= \pId ->
+                    if pId == toSqlKey 0 then Nothing else Just pId
+        post <- join <$> traverse get postId
         return (e, metaMap, post)
 
 data AddressMetas =

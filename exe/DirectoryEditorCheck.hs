@@ -72,8 +72,10 @@ nonMatchingListings = fmap catMaybes . mapM filterListings
                 maybe "" (boolText . (/= "publish") . postStatus) maybePost
             formidableIsDraft = boolText . formItemIsDraft $ entityVal item
         postUser        <- maybeEmptyName $ fmap postAuthor maybePost
-        formidableOwner <- getUserName (formItemUser $ entityVal item)
-        listingUser     <-
+        formidableOwner <- maybe (return "")
+                                 getUserName
+                                 (formItemUser $ entityVal item)
+        listingUser <-
             maybeEmptyName
             $   fmap toSqlKey
             .   readMaybe

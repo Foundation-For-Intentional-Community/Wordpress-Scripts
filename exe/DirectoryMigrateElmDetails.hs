@@ -24,13 +24,8 @@ main = do
     cmdArgs args
     runDB $ do
         ls <- getListings
-        let
-            postIds = mapMaybe
-                (\(e, _, _) -> if (fromSqlKey . formItemPost $ entityVal e) /= 0
-                    then Just $ formItemPost $ entityVal e
-                    else Nothing
-                )
-                ls
+        let postIds = filter ((/=) 0 . fromSqlKey)
+                $ mapMaybe (\(e, _, _) -> formItemPost $ entityVal e) ls
         forM_ postIds $ \pId -> update pId [PostContent =. "[directory_elm]"]
 
 args :: ()

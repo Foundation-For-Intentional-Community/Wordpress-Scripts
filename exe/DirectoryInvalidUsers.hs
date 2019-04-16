@@ -7,6 +7,7 @@ import           Data.Csv                       ( ToNamedRecord
                                                 )
 import           Data.Maybe                     ( catMaybes
                                                 , isJust
+                                                , fromMaybe
                                                 )
 import           Data.Text                      ( Text )
 import           Database.Persist.Sql           ( Entity(..)
@@ -60,7 +61,7 @@ invalidFilter l@(item, fields, maybePost) = do
     let listingID     = fromIntegral . fromSqlKey $ entityKey item
         communityName = getBestCommunityName l
     entryUserExists <- boolText . isJust <$> getUser
-        (formItemUser $ entityVal item)
+        (fromMaybe (toSqlKey 0) . formItemUser $ entityVal item)
     listingUser <- sequence
         (getUser . toSqlKey . read . T.unpack <$> M.lookup userIdFieldId fields)
     let listingUserExists = boolText $ isJust listingUser

@@ -95,14 +95,14 @@ data Args
 argsSpec :: Args
 argsSpec =
     Args
-            { deletePrivateCoordinates = def
-                &= name "delete-private"
-                &= explicit
-                &= help "Remove metas for private addresses"
+            { deletePrivateCoordinates =
+                def &= name "delete-private" &= explicit &= help
+                    "Remove metas for private addresses"
             , deleteDefaultCoordinates = def
-                &= name "delete-default"
-                &= explicit
-                &= help "Remove any default coordinates"
+                                         &= name "delete-default"
+                                         &= explicit
+                                         &= help
+                                                "Remove any default coordinates"
             }
         &= program "directory-fix-coordinates"
         &= summary "Directory - Address Geocoding"
