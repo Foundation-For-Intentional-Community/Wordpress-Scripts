@@ -58,6 +58,9 @@ _exe-defs: &exe-defaults
         []
     dependencies:
         - fic-scripts
+    ghc-options:
+        - -O2
+        - -threaded
 
 executables:
     directory-address-export:
