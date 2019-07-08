@@ -68,8 +68,8 @@ argSpec =
                "Export the contact information for Listings in the State/Provinces"
         &= details
                [ "Expected arguments are 2-letter codes for Countries and full "
-                   ++ "names for States/Provinces."
-               , "E.g., directory-location-export \"US:Maryland\" \"CA:British Columbia\""
+                   ++ "names for States/Provinces or asteriks for all State/Provinces."
+               , "E.g., directory-location-export \"US:Maryland\" \"CA:British Columbia\" \"FR:*\""
                ]
 
 data Location
@@ -85,8 +85,10 @@ makeLocation raw = case T.split (== ':') (T.pack raw) of
 
 nameWithLocationTags :: Text -> [Location] -> Text
 nameWithLocationTags baseName locations =
-    let tagList =
-            L.nub $ map (\l -> lCountryCode l <> "_" <> lRegion l) locations
+    let regionTag region = if region == "*" then "all" else region
+        tagList = L.nub $ map
+            (\l -> lCountryCode l <> "_" <> regionTag (lRegion l))
+            locations
         tags = if null tagList then "" else "-" <> T.intercalate "-" tagList
     in  baseName <> tags <> ".csv"
 
@@ -94,12 +96,12 @@ filterListings
     :: [Location] -> (Entity FormItem, M.Map Int Text, Maybe Post) -> Bool
 filterListings locations (_, metas, _)
     = let
-          address = getAddressMetas metas
-          matchingLocations =
-              flip filter locations
-                  $ \l ->
-                        (DB.state address == lRegion l)
-                            && (DB.country address == lCountryCode l)
+          address           = getAddressMetas metas
+          matchingLocations = flip filter locations $ \l ->
+              (DB.country address == lCountryCode l)
+                  && (  (DB.state address == lRegion l)
+                     || (DB.state address == "*")
+                     )
       in
           not $ null matchingLocations
 
