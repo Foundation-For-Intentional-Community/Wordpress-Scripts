@@ -99,9 +99,7 @@ filterListings locations (_, metas, _)
           address           = getAddressMetas metas
           matchingLocations = flip filter locations $ \l ->
               (DB.country address == lCountryCode l)
-                  && (  (DB.state address == lRegion l)
-                     || (DB.state address == "*")
-                     )
+                  && ((DB.state address == lRegion l) || (lRegion l == "*"))
       in
           not $ null matchingLocations
 
