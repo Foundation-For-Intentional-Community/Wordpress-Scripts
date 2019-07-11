@@ -1,23 +1,23 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{- | This script searches for listings with public addresses that have no
-latitude or longitude set. It attempts to geocode either the map address or
-the contact address, saving the returned latitude & longitude to the item
-meta table.
+{- | This script geocodes either the map address or contact address for
+listings & saves the returned latitude & longitude to the item meta table.
 
-It also does this for listings at the default values(the maps center point)
-or at (0, 0).
+Public contact addresses are geocoded with the entire address and private
+ones use only the city, state, zip, & country.
 
-There are CLI flags to delete default values and values for listings with
-private addresses.
+There is a CLI flag to only update listings that were last updated in the
+last 2 days and one to disable the creation of a CSV export containing
+Geocoding API errors.
+
+TODO: Email directory manager on failed geocodings?
 
 -}
-import           Control.Monad                  ( void
-                                                , when
-                                                )
+import           Control.Monad                  ( unless )
 import           Control.Monad.Reader           ( MonadReader
                                                 , MonadIO
                                                 , ReaderT
@@ -25,12 +25,24 @@ import           Control.Monad.Reader           ( MonadReader
                                                 , asks
                                                 , liftIO
                                                 )
-import           Data.Maybe                     ( isNothing )
+import           Data.Csv                       ( ToNamedRecord
+                                                , DefaultOrdered
+                                                )
+import           Data.Maybe                     ( catMaybes )
 import           Data.Text                      ( Text )
-import           Database.Persist               ( Entity(..)
+import           Data.Time                      ( Day
+                                                , UTCTime(utctDay)
+                                                , diffDays
+                                                , getCurrentTime
+                                                , formatTime
+                                                , defaultTimeLocale
+                                                )
+import           Database.Persist.Sql           ( Entity(..)
                                                 , (==.)
                                                 , deleteWhere
+                                                , fromSqlKey
                                                 )
+import           GHC.Generics                   ( Generic )
 import           Network.HTTP.Client            ( Manager
                                                 , newManager
                                                 )
@@ -62,8 +74,10 @@ import           DB                             ( runDB
                                                 , getListings
                                                 , AddressMetas(..)
                                                 , getAddressMetas
+                                                , getBestCommunityName
                                                 , upsertItemMeta
                                                 )
+import           Export                         ( toCsvFile )
 import           Schema                  hiding ( Key )
 
 import qualified Data.Map.Strict               as M
@@ -72,42 +86,55 @@ import qualified Data.Text                     as T
 
 main :: IO ()
 main = do
-    env <-
-        Env <$> cmdArgs argsSpec <*> getApiKey <*> newManager tlsManagerSettings
-    flip runReaderT env . unScript $ do
-        listingData <- liftIO $ runDB getListings
-        mapM_ fixCoords listingData
+    args        <- cmdArgs argsSpec
+    env         <- Env <$> getApiKey <*> newManager tlsManagerSettings
+    currentTime <- getCurrentTime
+    let currentDay = utctDay currentTime
+    errors <- flip runReaderT env . unScript $ do
+        let filterListings = if updatedRecently args
+                then filter (updatedInLastTwoDays currentDay)
+                else id
+        listingData <- liftIO $ filterListings <$> runDB getListings
+        catMaybes <$> mapM fixCoords listingData
+    unless (null errors || disableExport args) $ toCsvFile
+        (  "geocoding-errors-"
+        <> T.pack (formatTime defaultTimeLocale "%FT%H-%M-%S" currentTime)
+        <> ".csv"
+        )
+        errors
   where
+    getApiKey :: IO Key
     getApiKey = lookupEnv "MAPS_API_KEY" >>= \case
         Nothing ->
             error "You must define a `MAPS_API_KEY` environmental variable."
         Just key -> return . Key $ T.pack key
+    updatedInLastTwoDays
+        :: Day -> (Entity FormItem, M.Map Int Text, Maybe Post) -> Bool
+    updatedInLastTwoDays currentDay (Entity _ item, _, _) =
+        abs (diffDays currentDay $ utctDay $ formItemUpdatedAt item) <= 2
 
 
 -- CLI Args
 
 data Args
     = Args
-        { deletePrivateCoordinates :: Bool
-        , deleteDefaultCoordinates :: Bool
+        { updatedRecently :: Bool
+        , disableExport :: Bool
         } deriving (Show, Data, Typeable)
 
 argsSpec :: Args
 argsSpec =
     Args
-            { deletePrivateCoordinates =
-                def &= name "delete-private" &= explicit &= help
-                    "Remove metas for private addresses"
-            , deleteDefaultCoordinates = def
-                                         &= name "delete-default"
-                                         &= explicit
-                                         &= help
-                                                "Remove any default coordinates"
+            { updatedRecently =
+                def &= name "recently-updated" &= explicit &= help
+                    "Only listings updated in the last 2 days"
+            , disableExport   =
+                def &= name "disable-export" &= explicit &= help
+                    "Do not generate an export containing geocoding errors"
             }
         &= program "directory-fix-coordinates"
         &= summary "Directory - Address Geocoding"
-        &= help
-               "Geocode the map/contact addresses of listings with public addresses & no coordinates."
+        &= help "Geocode the map or contact addresses of listings."
 
 
 -- Script Environment
@@ -118,8 +145,7 @@ newtype Script a
 
 data Env
     = Env
-        { args :: Args
-        , apiKey :: Key
+        { apiKey :: Key
         , manager :: Manager
         }
 
@@ -140,36 +166,25 @@ longitudeFieldId = 685
 
 -- | Determine whether we should geocode, build the address & geocode if
 -- necessary, removing any private coordinates if specified.
-fixCoords :: (Entity FormItem, M.Map Int Text, Maybe Post) -> Script ()
-fixCoords (Entity itemId _, metaMap, _) =
+fixCoords
+    :: (Entity FormItem, M.Map Int Text, Maybe Post)
+    -> Script (Maybe GeocodingError)
+fixCoords l@(Entity itemId _, metaMap, _) =
     let publicAddress = M.lookup isAddressPublicFieldId metaMap
+        visibility = if publicAddress == Just "Public" then Public else Private
         mapAddress    = M.lookup mapAddressFieldId metaMap
         latitude      = M.lookup latitudeFieldId metaMap
         longitude     = M.lookup longitudeFieldId metaMap
         addressMetas  = getAddressMetas metaMap
-    in  case (publicAddress, latitude, longitude) of
-            -- Existng Coordinates
-            (Just "Public", Just lat, Just long) ->
-                when (isDefaultLatAndLong lat long) $ do
-                    result <- geocodeAndSave itemId mapAddress addressMetas
-                    deleteDefault <- asks $ deleteDefaultCoordinates . args
-                    when (isNothing result && deleteDefault) deleteLatAndLong
-            -- No or Partial Coordinates
-            (Just "Public", _, _) ->
-                void $ geocodeAndSave itemId mapAddress addressMetas
-            -- Not Public
-            (_, Nothing, Nothing) -> return ()
-            -- Not Public w/ Incomplete Lat/Lng
-            (_, _      , _      ) -> do
-                deletePrivate <- asks $ deletePrivateCoordinates . args
-                when deletePrivate deleteLatAndLong
+    in  fmap makeError <$> case (latitude, longitude) of
+            (Just _, Just _) ->
+                geocodeAndSave itemId visibility mapAddress addressMetas
+            (Nothing, Nothing) ->
+                geocodeAndSave itemId visibility mapAddress addressMetas
+            _ -> do
+                deleteLatAndLong
+                geocodeAndSave itemId visibility mapAddress addressMetas
   where
-    -- Default Latitude/Longitude might be (0, 0), or our maps default
-    -- center point.
-    isDefaultLatAndLong :: Text -> Text -> Bool
-    isDefaultLatAndLong lat long =
-        (lat == "0" && long == "0")
-            || (lat == "39.095963" && long == "-96.606447")
     -- Delete the Latitude & Longitude metas for the Listing if they exist.
     deleteLatAndLong :: Script ()
     deleteLatAndLong =
@@ -183,6 +198,13 @@ fixCoords (Entity itemId _, metaMap, _) =
                    [ FormItemMetaField ==. longitudeFieldId
                    , FormItemMetaItem ==. itemId
                    ]
+    makeError :: (Text, Text) -> GeocodingError
+    makeError (address, errorMessage) = GeocodingError
+        { geCommunityName = getBestCommunityName l
+        , geListingId     = fromIntegral $ fromSqlKey itemId
+        , geAddress       = address
+        , geErrorText     = errorMessage
+        }
 
 
 -- | Geocode the given address, returning the Coordiantes or the Error
@@ -216,35 +238,47 @@ geocodeAddress address = if address == ""
 
 -- | Geocode either the Map Address or Contact Address for a Listing,
 -- saving the coordinates to the database if successful.
-geocodeAndSave :: FormItemId -> Maybe Text -> AddressMetas -> Script (Maybe ())
-geocodeAndSave itemId mapAddress addressMetas = do
+geocodeAndSave
+    :: FormItemId
+    -> AddressVisibility
+    -> Maybe Text
+    -> AddressMetas
+    -> Script (Maybe (Text, Text))
+geocodeAndSave itemId visibility mapAddress addressMetas = do
     let address = case mapAddress of
             Nothing   -> buildAddress
             Just ""   -> buildAddress
             Just addr -> addr
     geocodeAddress address >>= \case
-        Left errorText -> do
-            liftIO
-                .  putStrLn
-                $  "Error: Could not geocode address `"
-                <> T.unpack address
-                <> "` for Item "
-                <> show itemId
-                <> " - "
-                <> T.unpack errorText
-            return Nothing
-        Right latlng -> do
+        Left  errorText -> return $ Just (address, errorText)
+        Right latlng    -> do
             liftIO . runDB $ mapM_
                 (uncurry (upsertItemMeta itemId))
                 [ (latitudeFieldId , T.pack . show $ lat latlng)
                 , (longitudeFieldId, T.pack . show $ lng latlng)
                 ]
-            return $ Just ()
+            return Nothing
   where
     -- Build an Address string from the Contact Address metas.
     buildAddress :: Text
     buildAddress =
         let AddressMetas {..} = addressMetas
-        in  T.intercalate ", " $ filter
-                (/= "")
-                [addressOne, addressTwo, city, state, zipCode, country]
+        in  T.intercalate ", " $ filter (/= "") $ if visibility == Public
+                then [addressOne, addressTwo, city, state, zipCode, country]
+                else [city, state, zipCode, country]
+
+
+data AddressVisibility
+    = Private
+    | Public
+    deriving (Eq)
+
+data GeocodingError
+    = GeocodingError
+        { geCommunityName :: Text
+        , geListingId :: Int
+        , geAddress :: Text
+        , geErrorText :: Text
+        } deriving (Show, Generic)
+instance ToNamedRecord GeocodingError
+instance DefaultOrdered GeocodingError
