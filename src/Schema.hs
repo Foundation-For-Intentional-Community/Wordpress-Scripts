@@ -90,6 +90,7 @@ FormItem sql=3uOgy46w_frm_items
     post PostId Maybe sql=post_id
     user UserId Maybe sql=user_id
     isDraft Bool sql=is_draft
+    updatedAt UTCTime sql=updated_at
     deriving Show
 
 FormItemMeta sql=3uOgy46w_frm_item_metas
