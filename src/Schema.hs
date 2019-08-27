@@ -99,4 +99,12 @@ FormItemMeta sql=3uOgy46w_frm_item_metas
     item FormItemId sql=item_id
     value Text Maybe sql=meta_value
     deriving Show
+
+FormField sql=3uOgy46w_frm_fields
+    Id sql=id
+    fieldKey Text sql=field_key
+    name Text sql=name
+    description Text sql=description
+    formId Int sql=form_id
+
 |]
