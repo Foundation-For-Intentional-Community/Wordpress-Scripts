@@ -85,6 +85,13 @@ executables:
             - http-client
             - http-client-tls
             - mtl
+    directory-full-export:
+        <<: *exe-defaults
+        main:
+            DirectoryFullExport.hs
+        dependencies:
+            - fic-scripts
+            - bytestring
     directory-invalid-users:
         <<: *exe-defaults
         main:
