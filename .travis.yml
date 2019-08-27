@@ -8,7 +8,7 @@ cache:
 addons:
     apt:
         packages:
-            - libmariadbclient-dev
+            - libmariadb-client-lgpl-dev
             - libpcre3-dev
 
 
