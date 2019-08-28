@@ -67,6 +67,10 @@ executables:
         <<: *exe-defaults
         main:
             DirectoryAddressExport.hs
+    directory-contact-size-export:
+        <<: *exe-defaults
+        main:
+            DirectoryContactAndSizeExport.hs
     directory-deactivate-memberships:
         <<: *exe-defaults
         main:
