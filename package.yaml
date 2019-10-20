@@ -115,6 +115,10 @@ executables:
         <<: *exe-defaults
         main:
             DirectoryNonMemberExport.hs
+    directory-restore-listing:
+        <<: *exe-defaults
+        main:
+            DirectoryRestoreListing.hs
     directory-migrate-elm-details:
         <<: *exe-defaults
         main:

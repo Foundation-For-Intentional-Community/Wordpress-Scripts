@@ -15,6 +15,7 @@ module DB
     , DB
     , DBMonad
     , runDB
+    , runSQL
     -- * Users
     , getUser
     , getBestUserName
@@ -86,6 +87,14 @@ import qualified Data.Text                     as T
 type DB a = ReaderT SqlBackend (ResourceT (NoLoggingT IO)) a
 type DBMonad = ReaderT SqlBackend (ResourceT (NoLoggingT IO))
 
+-- | Run a database action with some connection info.
+runSQL :: ConnectInfo -> DB a -> IO a
+runSQL connInfo f =
+    runNoLoggingT $ runResourceT $ withMySQLConn connInfo $ runSqlConn f
+
+
+-- | Run a database action with the connection info in the DB_USER,
+-- DB_PASS, & DB_NAME environmental variables.
 runDB :: DB a -> IO a
 runDB f = do
     let
@@ -100,12 +109,11 @@ runDB f = do
         >>= \case
                 (Just u, Just p, Just n) -> return (u, p, n)
                 _                        -> error errMsg
-    runNoLoggingT $ runResourceT $ withMySQLConn
-        defaultConnectInfo { connectUser     = dbUser
-                           , connectPassword = dbPassword
-                           , connectDatabase = dbName
-                           }
-        (runSqlConn f)
+    let connectionConfig = defaultConnectInfo { connectUser     = dbUser
+                                              , connectPassword = dbPassword
+                                              , connectDatabase = dbName
+                                              }
+    runSQL connectionConfig f
 
 
 
