@@ -66,6 +66,7 @@ import           Data.Text                      ( Text )
 import           Data.Text.Encoding             ( encodeUtf8
                                                 , decodeUtf8
                                                 )
+import           Data.Time                      ( getCurrentTime )
 import           Data.PHPSession                ( PHPSessionValue(..)
                                                 , decodePHPSessionValue
                                                 )
@@ -291,14 +292,18 @@ getBestCommunityName (item, fields, maybePost) =
 
 upsertItemMeta :: FormItemId -> Int -> Text -> DB ()
 upsertItemMeta itemId fieldId value = do
-    let itemMeta = FormItemMeta { formItemMetaField = fieldId
-                                , formItemMetaItem  = itemId
-                                , formItemMetaValue = Just value
+    time <- liftIO getCurrentTime
+    let itemMeta = FormItemMeta { formItemMetaField   = fieldId
+                                , formItemMetaItem    = itemId
+                                , formItemMetaValue   = Just value
+                                , formItemMetaCreated = time
                                 }
     selectFirst [FormItemMetaItem ==. itemId, FormItemMetaField ==. fieldId] []
         >>= \case
-                Just (Entity metaId _) -> replace metaId itemMeta
-                Nothing                -> insert_ itemMeta
+                Just (Entity metaId current) -> replace metaId $ itemMeta
+                    { formItemMetaCreated = formItemMetaCreated current
+                    }
+                Nothing -> insert_ itemMeta
 
 
 
