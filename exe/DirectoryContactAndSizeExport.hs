@@ -92,7 +92,7 @@ listingToData l@(Entity itemId i, metaMap, _) = ExportData
     }
   where
     getMeta f = fromMaybe "" $ M.lookup f metaMap
-    renderDate utc = formatTime defaultTimeLocale "%F" utc
+    renderDate = formatTime defaultTimeLocale "%F"
     getSize adultFieldId childFieldId =
         (fromMaybe 0 . readMaybe . unpack $ getMeta adultFieldId)
             + (fromMaybe 0 . readMaybe . unpack $ getMeta childFieldId)
